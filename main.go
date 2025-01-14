@@ -10,6 +10,12 @@ import (
 	"go.i3wm.org/i3/v4"
 )
 
+// TODO: Go ahead with double stack
+// TODO: Is it better Unix or TCP socket?
+// TODO: Think other way for ignore events sent by myself
+
+var x int
+
 func main() {
 	var (
 		s     = stack.New()
@@ -25,8 +31,12 @@ func main() {
 			if event.Change == "focus" {
 				mutex.Lock()
 				if event.Old.Name != "" {
-					s.Push(event.Old.Name)
-					log.Printf("[ %s ] - Workspace pushed to stack", event.Old.Name)
+					if x == 0 {
+						s.Push(event.Old.Name)
+						log.Printf("[ %s ] - Workspace pushed to stack", event.Old.Name)
+					} else {
+						x--
+					}
 				}
 				mutex.Unlock()
 			}
@@ -80,6 +90,7 @@ func handleConnection(conn net.Conn, s *stack.Stack, mutex *sync.Mutex) {
 
 		workspaceName := s.Pop().(string)
 		log.Printf("Switching to workspace: %s", workspaceName)
+		x++
 		if _, err := i3.RunCommand("workspace " + workspaceName); err != nil {
 			log.Printf("Failed to switch workspace: %v", err)
 		}
