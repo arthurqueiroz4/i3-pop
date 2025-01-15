@@ -34,22 +34,6 @@ func main() {
 	// 	}
 	// }()
 	//
-	// listener, err := net.Listen("tcp", ":43222")
-	// if err != nil {
-	// 	log.Fatalf("Failed to start TCP listener: %v", err)
-	// }
-	// defer listener.Close()
-	// log.Println("Socket listening on port 43222")
-	//
-	// for {
-	// 	conn, err := listener.Accept()
-	// 	if err != nil {
-	// 		log.Printf("Failed to accept connection: %v", err)
-	// 		continue
-	// 	}
-	// 	log.Println("New connection established")
-	//
-	// 	go handleConnection(conn, s, &mutex)
 	// }
 }
 
