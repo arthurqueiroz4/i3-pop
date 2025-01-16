@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
-	"log"
 	"net"
 	"strings"
 	"sync"
@@ -15,21 +14,9 @@ func TestServerTCP(t *testing.T) {
 	serverReady := make(chan struct{})
 	var wg sync.WaitGroup
 
-	h := func(conn net.Conn) {
-		defer conn.Close()
-		buf := make([]byte, 4096)
-		n, err := conn.Read(buf)
-		if err != nil {
-			log.Printf("Error reading from connection: %v", err)
-			return
-		}
-
-		msg := strings.TrimSpace(string(buf[:n]))
+	h := func(msg string) {
 		assert.NotEmpty(t, msg)
 		assert.Equal(t, msgToSend, msg)
-
-		_, err = conn.Write([]byte("pong"))
-		assert.Nil(t, err)
 	}
 
 	wg.Add(1)
@@ -53,5 +40,5 @@ func TestServerTCP(t *testing.T) {
 	n, err := conn.Read(buf)
 	assert.Nil(t, err)
 	response := strings.TrimSpace(string(buf[:n]))
-	assert.Equal(t, "pong", response)
+	assert.Equal(t, "Message received and processing", response)
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"go.i3wm.org/i3/v4"
 	"log"
-	"net"
-	"strings"
 	"sync"
 )
 
@@ -46,23 +44,13 @@ var (
 	FRONT = "front"
 )
 
-func (wh *WorkspaceHandler) Handle(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 4096)
-	n, err := conn.Read(buf)
-	if err != nil {
-		log.Printf("Error reading from connection: %v", err)
-		return
-	}
-
-	msg := strings.TrimSpace(string(buf[:n]))
-	switch msg {
+func (wh *WorkspaceHandler) Handle(msgToProcess string) {
+	switch msgToProcess {
 	case BACK:
 		wh.treatBackMessage()
 	case FRONT:
 		wh.treatFrontMessage()
 	}
-	_, err = conn.Write([]byte("Message received and processed"))
 }
 
 func (wh *WorkspaceHandler) treatBackMessage() {

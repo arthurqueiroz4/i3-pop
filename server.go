@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"strings"
 )
 
 type Server struct {
@@ -15,7 +16,7 @@ func NewServer(network string, port string) *Server {
 	return &Server{network: network, port: port}
 }
 
-func (s *Server) Start(handler func(conn net.Conn), ready chan struct{}) {
+func (s *Server) Start(handler func(msgToProcess string), ready chan struct{}) {
 	listener, err := net.Listen(s.network, s.port)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
@@ -29,7 +30,17 @@ func (s *Server) Start(handler func(conn net.Conn), ready chan struct{}) {
 			log.Printf("Failed to accept connection: %v", err)
 			return
 		}
-		go handler(conn)
+		buf := make([]byte, 4096)
+		n, err := conn.Read(buf)
+		if err != nil {
+			log.Printf("Error reading from connection: %v", err)
+			return
+		}
+
+		msg := strings.TrimSpace(string(buf[:n]))
+		go handler(msg)
+		_, err = conn.Write([]byte("Message received and processing"))
+		conn.Close()
 	}
 }
 
