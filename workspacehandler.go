@@ -14,6 +14,9 @@ func NewWorkspaceHandler(ds *DoubleStack[string]) *WorkspaceHandler {
 	return &WorkspaceHandler{ds: ds}
 }
 
+var shouldStoreEventInBackStack = true
+var shouldStoreEventInFrontStack = false
+
 func (wh *WorkspaceHandler) ListenEvents() {
 	var mutex sync.Mutex
 	subscription := i3.Subscribe(i3.WorkspaceEventType)
@@ -22,14 +25,19 @@ func (wh *WorkspaceHandler) ListenEvents() {
 		event := subscription.Event().(*i3.WorkspaceEvent)
 		if event.Change == "focus" {
 			mutex.Lock()
-			if event.Old.Name != "" {
-				if ignoreEvent == 0 {
-					wh.ds.PushOnBack(event.Old.Name)
-					log.Printf("[ %s ] - Workspace pushed to stack", event.Old.Name)
-				} else {
-					ignoreEvent--
-				}
+			if shouldStoreEventInBackStack {
+				wh.ds.PushOnBack(event.Old.Name)
+				log.Printf("[ %s ] - Workspace pushed to back stack", event.Old.Name)
+			} else {
+				shouldStoreEventInBackStack = true
 			}
+
+			if shouldStoreEventInFrontStack {
+				wh.ds.PushOnFront(event.Old.Name)
+				log.Printf("[ %s ] - Workspace pushed to front stack", event.Old.Name)
+				shouldStoreEventInFrontStack = false
+			}
+
 			mutex.Unlock()
 		}
 	}
@@ -44,8 +52,8 @@ var (
 	FRONT = "front"
 )
 
-func (wh *WorkspaceHandler) Handle(msgToProcess string) {
-	switch msgToProcess {
+func (wh *WorkspaceHandler) Process(msg string) {
+	switch msg {
 	case BACK:
 		wh.treatBackMessage()
 	case FRONT:
@@ -54,7 +62,7 @@ func (wh *WorkspaceHandler) Handle(msgToProcess string) {
 }
 
 func (wh *WorkspaceHandler) treatBackMessage() {
-	namePtr := wh.ds.PopOnBackAndPutOnFront()
+	namePtr := wh.ds.PopOnBack()
 	if namePtr == nil {
 		return
 	}
@@ -62,12 +70,16 @@ func (wh *WorkspaceHandler) treatBackMessage() {
 }
 
 func (wh *WorkspaceHandler) treatFrontMessage() {
-	// TODO: Implement this
-	//name := wh.ds.PopOnFrontAndPutOnBack()
-	//goToWorkspaceName(*name)
+	namePtr := wh.ds.PopOnFront()
+	if namePtr == nil {
+		return
+	}
+	goToWorkspaceName(*namePtr)
 }
 
 func goToWorkspaceName(name string) {
+	shouldStoreEventInBackStack = false
+	shouldStoreEventInFrontStack = true
 	command, err := i3.RunCommand("workspace" + name)
 	if err != nil {
 		log.Printf("Error running command on i3: %v", err)
