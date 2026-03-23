@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 )
 
 type DoubleStack[T any] struct {
 	front Stack[T]
 	back  Stack[T]
+	mu    sync.RWMutex
 }
 
 var onupdate = make(chan interface{})
@@ -23,37 +25,75 @@ func NewDoubleStack[T any](limit int) *DoubleStack[T] {
 }
 
 func (ds *DoubleStack[T]) PushOnBack(data T) {
+	ds.mu.Lock()
 	ds.back.push(data)
+	ds.mu.Unlock()
 	onupdate <- struct{}{}
 }
 
 func (ds *DoubleStack[T]) PopOnBack() *T {
+	ds.mu.Lock()
 	v := ds.back.pop()
+	ds.mu.Unlock()
 	onupdate <- struct{}{}
 	return v
 }
 
 func (ds *DoubleStack[T]) PushOnFront(data T) {
+	ds.mu.Lock()
 	ds.front.push(data)
+	ds.mu.Unlock()
 	onupdate <- struct{}{}
 }
 
 func (ds *DoubleStack[T]) PopOnFront() *T {
+	ds.mu.Lock()
 	v := ds.front.pop()
+	ds.mu.Unlock()
 	onupdate <- struct{}{}
 	return v
 }
 
+func (ds *DoubleStack[T]) PeekOnBack() *T {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.back.peek()
+}
+
+func (ds *DoubleStack[T]) PeekOnFront() *T {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.front.peek()
+}
+
+func (ds *DoubleStack[T]) BackLength() int {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.back.length()
+}
+
+func (ds *DoubleStack[T]) FrontLength() int {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.front.length()
+}
+
 func (ds *DoubleStack[T]) PopOnFrontAndPutOnBack() *T {
 	// Pop on front stack and Put on back stack
+	ds.mu.Lock()
+	v := swapPeek[T](ds.front, ds.back)
+	ds.mu.Unlock()
 	onupdate <- "popped on front"
-	return swapPeek[T](ds.front, ds.back)
+	return v
 }
 
 func (ds *DoubleStack[T]) PopOnBackAndPutOnFront() *T {
 	// Pop on back stack and Put on back stack
+	ds.mu.Lock()
+	v := swapPeek[T](ds.back, ds.front)
+	ds.mu.Unlock()
 	onupdate <- "popped on back"
-	return swapPeek[T](ds.back, ds.front)
+	return v
 }
 
 func swapPeek[T any](pop, put Stack[T]) *T {
@@ -68,8 +108,10 @@ func (ds *DoubleStack[T]) monitor() {
 	log.Println("Starting stack monitor")
 	for {
 		<-onupdate
+		ds.mu.RLock()
 		log.Printf("[Back Stack] Lenght: %d -- [ %s ]", ds.back.length(), formatStack[T](ds.back))
 		log.Printf("[Front Stack] Lenght: %d -- [ %s ]", ds.front.length(), formatStack[T](ds.front))
+		ds.mu.RUnlock()
 	}
 }
 

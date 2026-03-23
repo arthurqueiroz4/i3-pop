@@ -37,20 +37,20 @@ func TestDoubleStack(t *testing.T) {
 	ds.PushOnBack(3)
 
 	assert.Equal(t, 3, *ds.PopOnBackAndPutOnFront())
-	assert.Equal(t, 2, *ds.back.peek())
-	assert.Equal(t, 3, *ds.front.peek())
+	assert.Equal(t, 2, *ds.PeekOnBack())
+	assert.Equal(t, 3, *ds.PeekOnFront())
 
 	assert.Equal(t, 2, *ds.PopOnBackAndPutOnFront())
-	assert.Equal(t, 1, *ds.back.peek())
-	assert.Equal(t, 2, *ds.front.peek())
+	assert.Equal(t, 1, *ds.PeekOnBack())
+	assert.Equal(t, 2, *ds.PeekOnFront())
 
 	assert.Equal(t, 1, *ds.PopOnBackAndPutOnFront())
-	assert.Equal(t, 1, *ds.front.peek())
-	assert.Nil(t, ds.back.peek())
+	assert.Equal(t, 1, *ds.PeekOnFront())
+	assert.Nil(t, ds.PeekOnBack())
 
 	assert.Nil(t, ds.PopOnBackAndPutOnFront())
-	assert.Equal(t, 3, ds.front.length())
-	assert.Equal(t, 1, *ds.front.peek())
+	assert.Equal(t, 3, ds.FrontLength())
+	assert.Equal(t, 1, *ds.PeekOnFront())
 }
 func TestDoubleStackWithLimit(t *testing.T) {
 	ds := NewDoubleStack[int](2)
@@ -63,7 +63,7 @@ func TestDoubleStackWithLimit(t *testing.T) {
 	assert.Equal(t, 2, *ds.PopOnBackAndPutOnFront())
 	assert.Nil(t, ds.PopOnBackAndPutOnFront())
 
-	assert.Equal(t, 2, *ds.front.pop())
-	assert.Equal(t, 3, *ds.front.pop())
-	assert.Nil(t, ds.front.pop())
+	assert.Equal(t, 2, *ds.PopOnFront())
+	assert.Equal(t, 3, *ds.PopOnFront())
+	assert.Nil(t, ds.PopOnFront())
 }
