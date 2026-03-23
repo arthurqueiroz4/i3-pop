@@ -82,7 +82,7 @@ func goToWorkspaceName(name string, storeOnBack, storeOnFront bool) {
 	shouldStoreEventInBackStack = storeOnBack
 	shouldStoreEventInFrontStack = storeOnFront
 	workspaceNavigationMutex.Unlock()
-	command, err := i3.RunCommand("workspace" + name)
+	command, err := i3.RunCommand("workspace " + name)
 	if err != nil {
 		log.Printf("Error running command on i3: %v", err)
 		return
