@@ -41,10 +41,6 @@ func (wh *WorkspaceHandler) ListenEvents() {
 			workspaceNavigationMutex.Unlock()
 		}
 	}
-
-	if err := subscription.Close(); err != nil {
-		log.Printf("Error closing subscription: %v", err)
-	}
 }
 
 var (
