@@ -16,15 +16,15 @@ func NewWorkspaceHandler(ds *DoubleStack[string]) *WorkspaceHandler {
 
 var shouldStoreEventInBackStack = true
 var shouldStoreEventInFrontStack = false
+var workspaceNavigationMutex sync.Mutex
 
 func (wh *WorkspaceHandler) ListenEvents() {
-	var mutex sync.Mutex
 	subscription := i3.Subscribe(i3.WorkspaceEventType)
 	defer subscription.Close()
 	for subscription.Next() {
 		event := subscription.Event().(*i3.WorkspaceEvent)
 		if event.Change == "focus" {
-			mutex.Lock()
+			workspaceNavigationMutex.Lock()
 			if shouldStoreEventInBackStack {
 				wh.ds.PushOnBack(event.Old.Name)
 				log.Printf("[ %s ] - Workspace pushed to back stack", event.Old.Name)
@@ -38,7 +38,7 @@ func (wh *WorkspaceHandler) ListenEvents() {
 				shouldStoreEventInFrontStack = false
 			}
 
-			mutex.Unlock()
+			workspaceNavigationMutex.Unlock()
 		}
 	}
 
@@ -78,8 +78,10 @@ func (wh *WorkspaceHandler) treatFrontMessage() {
 }
 
 func goToWorkspaceName(name string) {
+	workspaceNavigationMutex.Lock()
 	shouldStoreEventInBackStack = false
 	shouldStoreEventInFrontStack = true
+	workspaceNavigationMutex.Unlock()
 	command, err := i3.RunCommand("workspace" + name)
 	if err != nil {
 		log.Printf("Error running command on i3: %v", err)
