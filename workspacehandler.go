@@ -14,12 +14,24 @@ func NewWorkspaceHandler(ds *DoubleStack[string]) *WorkspaceHandler {
 	return &WorkspaceHandler{ds: ds}
 }
 
+type eventSubscription interface {
+	Next() bool
+	Event() i3.Event
+	Close() error
+}
+
+var subscribeWorkspaceEvents = func() eventSubscription {
+	return i3.Subscribe(i3.WorkspaceEventType)
+}
+
+var runI3Command = i3.RunCommand
+
 var shouldStoreEventInBackStack = true
 var shouldStoreEventInFrontStack = false
 var workspaceNavigationMutex sync.Mutex
 
 func (wh *WorkspaceHandler) ListenEvents() {
-	subscription := i3.Subscribe(i3.WorkspaceEventType)
+	subscription := subscribeWorkspaceEvents()
 	defer subscription.Close()
 	for subscription.Next() {
 		event := subscription.Event().(*i3.WorkspaceEvent)
@@ -78,7 +90,7 @@ func goToWorkspaceName(name string, storeOnBack, storeOnFront bool) {
 	shouldStoreEventInBackStack = storeOnBack
 	shouldStoreEventInFrontStack = storeOnFront
 	workspaceNavigationMutex.Unlock()
-	command, err := i3.RunCommand("workspace " + name)
+	command, err := runI3Command("workspace " + name)
 	if err != nil {
 		log.Printf("Error running command on i3: %v", err)
 		return
