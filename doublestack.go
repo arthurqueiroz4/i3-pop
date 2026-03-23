@@ -11,14 +11,14 @@ type DoubleStack[T any] struct {
 	front Stack[T]
 	back  Stack[T]
 	mu    sync.RWMutex
+	onupdate chan struct{}
 }
-
-var onupdate = make(chan interface{})
 
 func NewDoubleStack[T any](limit int) *DoubleStack[T] {
 	ds := &DoubleStack[T]{
-		front: NewStackWithLimit[T](limit),
-		back:  NewStackWithLimit[T](limit),
+		front:    NewStackWithLimit[T](limit),
+		back:     NewStackWithLimit[T](limit),
+		onupdate: make(chan struct{}),
 	}
 	go ds.monitor()
 	return ds
@@ -28,14 +28,14 @@ func (ds *DoubleStack[T]) PushOnBack(data T) {
 	ds.mu.Lock()
 	ds.back.push(data)
 	ds.mu.Unlock()
-	onupdate <- struct{}{}
+	ds.onupdate <- struct{}{}
 }
 
 func (ds *DoubleStack[T]) PopOnBack() *T {
 	ds.mu.Lock()
 	v := ds.back.pop()
 	ds.mu.Unlock()
-	onupdate <- struct{}{}
+	ds.onupdate <- struct{}{}
 	return v
 }
 
@@ -43,14 +43,14 @@ func (ds *DoubleStack[T]) PushOnFront(data T) {
 	ds.mu.Lock()
 	ds.front.push(data)
 	ds.mu.Unlock()
-	onupdate <- struct{}{}
+	ds.onupdate <- struct{}{}
 }
 
 func (ds *DoubleStack[T]) PopOnFront() *T {
 	ds.mu.Lock()
 	v := ds.front.pop()
 	ds.mu.Unlock()
-	onupdate <- struct{}{}
+	ds.onupdate <- struct{}{}
 	return v
 }
 
@@ -83,7 +83,7 @@ func (ds *DoubleStack[T]) PopOnFrontAndPutOnBack() *T {
 	ds.mu.Lock()
 	v := swapPeek[T](ds.front, ds.back)
 	ds.mu.Unlock()
-	onupdate <- "popped on front"
+	ds.onupdate <- struct{}{}
 	return v
 }
 
@@ -92,7 +92,7 @@ func (ds *DoubleStack[T]) PopOnBackAndPutOnFront() *T {
 	ds.mu.Lock()
 	v := swapPeek[T](ds.back, ds.front)
 	ds.mu.Unlock()
-	onupdate <- "popped on back"
+	ds.onupdate <- struct{}{}
 	return v
 }
 
@@ -107,7 +107,7 @@ func swapPeek[T any](pop, put Stack[T]) *T {
 func (ds *DoubleStack[T]) monitor() {
 	log.Println("Starting stack monitor")
 	for {
-		<-onupdate
+		<-ds.onupdate
 		ds.mu.RLock()
 		log.Printf("[Back Stack] Lenght: %d -- [ %s ]", ds.back.length(), formatStack[T](ds.back))
 		log.Printf("[Front Stack] Lenght: %d -- [ %s ]", ds.front.length(), formatStack[T](ds.front))
