@@ -68,8 +68,8 @@ func (ds *DoubleStack[T]) monitor() {
 	log.Println("Starting stack monitor")
 	for {
 		<-onupdate
-		log.Printf("[Back Stack] Lenght: %d -- [ %s ]", ds.back.length(), formatStack[string](ds.back))
-		log.Printf("[Front Stack] Lenght: %d -- [ %s ]", ds.front.length(), formatStack[string](ds.front))
+		log.Printf("[Back Stack] Lenght: %d -- [ %s ]", ds.back.length(), formatStack[T](ds.back))
+		log.Printf("[Front Stack] Lenght: %d -- [ %s ]", ds.front.length(), formatStack[T](ds.front))
 	}
 }
 
