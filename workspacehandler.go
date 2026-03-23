@@ -66,7 +66,7 @@ func (wh *WorkspaceHandler) treatBackMessage() {
 	if namePtr == nil {
 		return
 	}
-	goToWorkspaceName(*namePtr)
+	goToWorkspaceName(*namePtr, false, true)
 }
 
 func (wh *WorkspaceHandler) treatFrontMessage() {
@@ -74,13 +74,13 @@ func (wh *WorkspaceHandler) treatFrontMessage() {
 	if namePtr == nil {
 		return
 	}
-	goToWorkspaceName(*namePtr)
+	goToWorkspaceName(*namePtr, true, false)
 }
 
-func goToWorkspaceName(name string) {
+func goToWorkspaceName(name string, storeOnBack, storeOnFront bool) {
 	workspaceNavigationMutex.Lock()
-	shouldStoreEventInBackStack = false
-	shouldStoreEventInFrontStack = true
+	shouldStoreEventInBackStack = storeOnBack
+	shouldStoreEventInFrontStack = storeOnFront
 	workspaceNavigationMutex.Unlock()
 	command, err := i3.RunCommand("workspace" + name)
 	if err != nil {
