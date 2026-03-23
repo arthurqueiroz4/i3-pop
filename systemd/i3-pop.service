@@ -1,0 +1,13 @@
+[Unit]
+Description=i3-pop daemon (workspace back/forward history for i3)
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/i3-pop
+Restart=on-failure
+RestartSec=2
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
