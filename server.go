@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net"
 	"strings"
@@ -27,19 +28,30 @@ func (s *Server) Start(handler func(msgToProcess string), ready chan struct{}) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			if netErr, ok := err.(net.Error); ok && netErr.Temporary() {
+				log.Printf("Temporary accept error: %v", err)
+				continue
+			}
 			log.Printf("Failed to accept connection: %v", err)
-			return
+			continue
 		}
 		buf := make([]byte, 4096)
 		n, err := conn.Read(buf)
 		if err != nil {
 			log.Printf("Error reading from connection: %v", err)
-			return
+			conn.Close()
+			continue
 		}
 
 		msg := strings.TrimSpace(string(buf[:n]))
 		go handler(msg)
 		_, err = conn.Write([]byte("Message received and processing"))
+		if err != nil {
+			log.Printf("Error writing to connection: %v", err)
+		}
 		conn.Close()
 	}
 }
